@@ -9,7 +9,7 @@ Compatible templates: **Vite, Next JS**
 ### Installation
 #### Mac OSX (Brew):
 ```bash
-$ brew tap ozcap/quick-init && brew install quick-init
+brew tap ozcap/quick-init && brew install quick-init
 ```
 
 ### Documentation
