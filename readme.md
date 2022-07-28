@@ -1,6 +1,6 @@
 ## QUICK INIT
-CLI Tool to quickly start up React projects with Tailwind readily installed and configured,
-Typescript is selected **as default**. If JS is to be used, it must be specified with an option.
+CLI Tool to quickly start up React projects with Tailwind readily installed and configured.  
+Typescript is selected **as default**. If JS is to be used, it must be specified with an option parameter.
 
 Compatible templates: **Vite, Next JS**
 
