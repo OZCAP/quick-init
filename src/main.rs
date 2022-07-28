@@ -4,10 +4,10 @@ use std::fs;
 use std::process::{Command, Stdio};
 
 
-/// Quickly initialise and configure React+Typescript projects with tailwindcss and other dependancies.
+/// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
 /// Currently compatible with: Vite, Next JS
 #[derive(Parser, Debug)]
-#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <PROJECT NAME> [OPTIONS]")]
+#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]")]
 
 struct Args {
     /// Name of the project to be initialised
