@@ -2,7 +2,7 @@
 <img src="https://github.com/OZCAP/quick-init/blob/main/logo.svg" alt="Quick Init Logo" width="100" height="100">
 CLI Tool to quickly start up React projects with Tailwind automatically configured.
 
-Typescript is selected **as default** If JS is to be used, it must be specified with an option parameter.
+Typescript is selected **as default**. If JS is to be used, it must be specified with an option parameter.
 
 Compatible templates: **Vite, Next JS**
 
