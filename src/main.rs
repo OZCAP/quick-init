@@ -56,28 +56,38 @@ fn main() {
 
     let valid_templates = vec!["vite", "next"];
 
-    let config = if let Some(proj_dirs) = ProjectDirs::from("git", "ozcap", "quick-init") {
+    let config: () = if let Some(proj_dirs) = ProjectDirs::from("git", "ozcap", "quick-init") {
         // define the directory for config files
         let config_dir = proj_dirs.config_dir();
-        println!("{:?}", config_dir);
         let config_file_path = config_dir.join("config.toml");
         // target config file for application
         let config_file = fs::read_to_string(&config_file_path);
 
         // read config from file or use default config
-        let config = match config_file {
+        let config: Config = match config_file {
             Ok(file) => toml::from_str(&file).unwrap(),
             Err(_) => {
                 println!("No config file found, creating default config");
                 let default_config = Config {
-                vite_proj_dependancies: default_vite_proj_dependancies,
-                vite_dev_dependancies: default_vite_dev_dependancies,
-                next_proj_dependancies: default_next_proj_dependancies,
-                next_dev_dependancies: default_next_dev_dependancies,
-            };
-            fs::write(&config_file_path, "").unwrap();
-           default_config;
-        }
+                    vite_proj_dependancies: default_vite_proj_dependancies,
+                    vite_dev_dependancies: default_vite_dev_dependancies,
+                    next_proj_dependancies: default_next_proj_dependancies,
+                    next_dev_dependancies: default_next_dev_dependancies,
+                };
+
+                // create parent directory tree of config files
+                let path = std::path::Path::new(&config_file_path);
+                let prefix = path.parent().unwrap();
+                std::fs::create_dir_all(prefix).unwrap();
+
+                let stringified_config = 
+                r#"
+                test"#;
+
+                // let toml = toml::to_string_pretty(&default_config).unwrap();
+                // fs::write(&config_file_path, toml);
+                default_config
+            }
         };
 
         // extract arguments
