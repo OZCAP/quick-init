@@ -29,4 +29,4 @@ brew tap ozcap/quick-init && brew install quick-init
 ### TODO
 - [x] Configure tailwind configuration automatically
 - [x] Add choice of NextJs as well as Vite react
-- [ ] Allow local config to be loaded/set with chosen dependancies.
+- [x] Allow local config to be loaded/set with chosen dependancies.
