@@ -10,8 +10,6 @@ use std::fs;
 use std::process::{Command, Stdio};
 use toml;
 
-/// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
-/// Currently compatible with: Vite, Next JS
 #[derive(Deserialize, Serialize, Debug)]
 struct Config {
     vite: Dependancies,
@@ -23,9 +21,11 @@ struct Dependancies {
     dev: Vec<String>,
     proj: Vec<String>,
 }
-
+/// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
+/// Currently compatible with templates: Vite, Next JS
 #[derive(Parser)]
-#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]")]
+#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]", )]
+
 
 struct Args {
     /// Name of the React project to be created
