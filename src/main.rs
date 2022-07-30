@@ -80,12 +80,23 @@ fn main() {
                 let prefix = path.parent().unwrap();
                 std::fs::create_dir_all(prefix).unwrap();
 
-                let stringified_config = 
-                r#"
-                test"#;
+                let stringified_config = format!(
+                    "
+## vite config
+{}
+{}
 
-                // let toml = toml::to_string_pretty(&default_config).unwrap();
-                // fs::write(&config_file_path, toml);
+## nextjs config
+{}
+{}
+",
+                    toml::to_string(&default_config.vite_proj_dependancies).unwrap(),
+                    toml::to_string(&default_config.vite_dev_dependancies).unwrap(),
+                    toml::to_string(&default_config.next_proj_dependancies).unwrap(),
+                    toml::to_string(&default_config.next_dev_dependancies).unwrap(),
+                );
+                fs::write(&config_file_path, stringified_config).unwrap();
+
                 default_config
             }
         };
