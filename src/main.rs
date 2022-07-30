@@ -1,78 +1,161 @@
+//disblae unused variables
+#![allow(unused_variables)]
+
 use clap::Parser;
+use directories::ProjectDirs;
+use serde::{Deserialize, Serialize};
 use spinners::{Spinner, Spinners};
+use core::panic;
 use std::fs;
 use std::process::{Command, Stdio};
+use toml;
 
+#[derive(Deserialize, Serialize, Debug)]
+struct Config {
+    vite: Dependancies,
+    next: Dependancies,
+}
 
+#[derive(Deserialize, Serialize, Debug)]
+struct Dependancies {
+    dev: Vec<String>,
+    proj: Vec<String>,
+}
 /// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
-/// Currently compatible with: Vite, Next JS
-#[derive(Parser, Debug)]
-#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]")]
+/// Currently compatible with templates: Vite, Next JS
+#[derive(Parser)]
+#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]", )]
+
 
 struct Args {
-    /// Name of the project to be initialised
+    /// Name of the React project to be created
+    #[clap(default_value = "--config")]
     name: String,
-    
+
     /// [vite|next]
     #[clap(short, long, value_parser, default_value = "vite")]
     template: String,
-    
+
     /// Use Javascript instead of Typescript
     #[clap(short, long = "javascript", value_parser, default_value = "false")]
     js: bool,
+
+    /// Locate quick-init configuration file
+    #[clap(short, long = "config", value_parser, default_value = "false")]
+    config: bool,
+
 }
 
 fn main() {
-    // define dependancies
-    // TODO: have these loaded from a config file
-    let dev_dependancies = vec!["tailwindcss", "postcss", "autoprefixer"];
-    let project_dependancies = vec!["react-router-dom"];
-    let valid_templates = vec!["vite", "next"];
-    
-    // extract arguments
+    // parse arguments
     let args = Args::parse();
 
-    // check if template is valid
-    if !valid_templates.contains(&args.template.as_str()) {
-        println!("Invalid template {}. Valid templates are: {}", &args.template, valid_templates.join(", "));
-        std::process::exit(1);
-    }
+    // define default configuration
+    let default_config = Config {
+        vite: Dependancies {
+            dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+            proj: vec!["react-router-dom"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+        },
+        next: Dependancies {
+            dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+            proj: vec![""].iter().map(|x| x.to_string()).collect(),
+        },
+    };
 
-    // define current working directory
-    let cwd = std::env::current_dir().unwrap();
+    // load configuration from config file or create config file with default config
+    if let Some(proj_dirs) = ProjectDirs::from("git", "ozcap", "quick-init") {
+        // define the directory for config file
+        let config_dir = proj_dirs.config_dir();
+        let config_file_path = config_dir.join("config.toml");
+        // target config file for application
+        let config_file = fs::read_to_string(&config_file_path);
 
-    // define final project directory
-    let project_dir = cwd.join(&args.name);
+        // show location of config file
+        if args.config {
+            println!("To configure quick-init, edit the following file:\n{:?}", &config_file_path);
+            std::process::exit(0);
+        }
+        if args.name == "--config" {
+            std::process::exit(0);
+        }
 
-    // TODO: panic if template is not valid
-    // ...
+        // read config from file or use default config
+        let config: Config = match config_file {
+            Ok(file) => toml::from_str(&file).unwrap(),
+            Err(_) => {
+                println!("No config file found, creating default config");
 
+                // create parent directory tree of config file
+                let path = std::path::Path::new(&config_file_path);
+                let prefix = path.parent().unwrap();
+                std::fs::create_dir_all(prefix).unwrap();
 
-    // project initialisation
-    let init_command = generate_init_command(&args);
-    let mut sp = Spinner::new(
-        Spinners::Dots9,
-        format!("Starting new {} project", &args.template).into(),
-    );
-    dynamic_exec(init_command, &cwd);
-    sp.stop_and_persist("⚡", "Project created".to_string());
+                // stringify default config
+                let stringified_config = toml::to_string(&default_config).unwrap();
+                fs::write(&config_file_path, stringified_config).unwrap();
 
-    // dependancy installation
-    install_dependancies(&dev_dependancies, &project_dir, true);
-    install_dependancies(&project_dependancies, &project_dir, false);
+                // return default config
+                default_config
+            }
+        };
 
-    // tailwindcss config
-    if dev_dependancies.contains(&"tailwindcss") {
-        init_tailwind(&args, &project_dir);
-    }
+        // check if template is valid
+        let dependancies = if &args.template == "vite" {
+            Dependancies {
+                dev: config.vite.dev,
+                proj: config.vite.proj,
+            }
+        } else if &args.template == "next" {
+            Dependancies {
+                dev: config.next.dev,
+                proj: config.next.proj,
+            }
+        } else {
+            println!("Invalid template, see --help for more info");
+            panic!("Invalid template");
+        };
 
-    println!("\nQuick init complete!");
+        // define current working directory
+        let cwd = std::env::current_dir().unwrap();
 
-    // give option to run development server
-    start_server(&project_dir);
+        // define final project directory
+        let project_dir = cwd.join(&args.name);
 
-    // end script
-    std::process::exit(1);
+        // project initialisation
+        let init_command = generate_init_command(&args);
+        let mut sp = Spinner::new(
+            Spinners::Dots9,
+            format!("Starting new {} project", &args.template).into(),
+        );
+        dynamic_exec(init_command, &cwd);
+        sp.stop_and_persist("⚡", "Project created".to_string());
+
+        // dependancy installation
+        install_dependancies(&dependancies.dev, &project_dir, true);
+        install_dependancies(&dependancies.proj, &project_dir, false);
+
+        // configure tailwind if it is installed
+        if dependancies.dev.contains(&"tailwindcss".to_string()) {
+            init_tailwind(&args, &project_dir);
+        }
+
+        println!("\nQuick init complete!");
+
+        // give option to run development server
+        start_server(&project_dir);
+
+        // end script
+        std::process::exit(0);
+    };
 }
 
 /// execute a terminal command for the current OS
@@ -133,7 +216,7 @@ fn generate_init_command(args: &Args) -> Vec<&str> {
 }
 
 /// install dependancies
-fn install_dependancies(dependancies: &Vec<&str>, dir: &std::path::PathBuf, is_dev: bool) {
+fn install_dependancies(dependancies: &Vec<String>, dir: &std::path::PathBuf, is_dev: bool) {
     // show "dev" keyword if installing dev dependancies
     let dev = if is_dev { "dev " } else { "" };
 
