@@ -20,6 +20,7 @@ brew tap ozcap/quick-init && brew install quick-init
     <PROJECT_NAME>    Name of the project to be initialised
 
 #### Options:
+    -c, --config                 Locate quick-init configuration file
     -h, --help                   Print help information
     -j, --javascript             Use Javascript instead of Typescript
     -t, --template <TEMPLATE>    [vite|next] [default: vite]
