@@ -3,22 +3,22 @@
 
 use clap::Parser;
 use directories::ProjectDirs;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use spinners::{Spinner, Spinners};
+use core::panic;
 use std::fs;
 use std::process::{Command, Stdio};
 use toml;
 
 /// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
 /// Currently compatible with: Vite, Next JS
-#[derive(Deserialize, Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 struct Config {
-    vite_proj_dependancies: Vec<String>,
-    vite_dev_dependancies: Vec<String>,
-    next_proj_dependancies: Vec<String>,
-    next_dev_dependancies: Vec<String>,
+    vite: Dependancies,
+    next: Dependancies,
 }
 
+#[derive(Deserialize, Serialize, Debug)]
 struct Dependancies {
     dev: Vec<String>,
     proj: Vec<String>,
@@ -28,100 +28,107 @@ struct Dependancies {
 #[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.1.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]")]
 
 struct Args {
-    /// Name of the project to be initialised
+    /// Name of the React project to be created
+    #[clap(default_value = "--config")]
     name: String,
+
     /// [vite|next]
     #[clap(short, long, value_parser, default_value = "vite")]
     template: String,
+
     /// Use Javascript instead of Typescript
     #[clap(short, long = "javascript", value_parser, default_value = "false")]
     js: bool,
+
+    /// Locate quick-init configuration file
+    #[clap(short, long = "config", value_parser, default_value = "false")]
+    config: bool,
+
 }
 
 fn main() {
-    // define dependancies
-    // TODO: have these loaded from a config file
-    let default_vite_dev_dependancies = vec![
-        "tailwindcss".to_string(),
-        "postcss".to_string(),
-        "autoprefixer".to_string(),
-    ];
-    let default_next_dev_dependancies = vec![
-        "tailwindcss".to_string(),
-        "postcss".to_string(),
-        "autoprefixer".to_string(),
-    ];
-    let default_vite_proj_dependancies = vec!["react-router-dom".to_string()];
-    let default_next_proj_dependancies = vec![];
+    // parse arguments
+    let args = Args::parse();
 
-    let valid_templates = vec!["vite", "next"];
+    // define default configuration
+    let default_config = Config {
+        vite: Dependancies {
+            dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+            proj: vec!["react-router-dom"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+        },
+        next: Dependancies {
+            dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
+                .iter()
+                .map(|x| x.to_string())
+                .collect(),
+            proj: vec![""].iter().map(|x| x.to_string()).collect(),
+        },
+    };
 
-    let config: () = if let Some(proj_dirs) = ProjectDirs::from("git", "ozcap", "quick-init") {
-        // define the directory for config files
+    // load configuration from config file or create config file with default config
+    if let Some(proj_dirs) = ProjectDirs::from("git", "ozcap", "quick-init") {
+        // define the directory for config file
         let config_dir = proj_dirs.config_dir();
         let config_file_path = config_dir.join("config.toml");
         // target config file for application
         let config_file = fs::read_to_string(&config_file_path);
+
+        // show location of config file
+        if args.config {
+            println!("To configure quick-init, edit the following file:\n{:?}", &config_file_path);
+            std::process::exit(0);
+        }
+        if args.name == "--config" {
+            std::process::exit(0);
+        }
 
         // read config from file or use default config
         let config: Config = match config_file {
             Ok(file) => toml::from_str(&file).unwrap(),
             Err(_) => {
                 println!("No config file found, creating default config");
-                let default_config = Config {
-                    vite_proj_dependancies: default_vite_proj_dependancies,
-                    vite_dev_dependancies: default_vite_dev_dependancies,
-                    next_proj_dependancies: default_next_proj_dependancies,
-                    next_dev_dependancies: default_next_dev_dependancies,
-                };
 
-                // create parent directory tree of config files
+                // create parent directory tree of config file
                 let path = std::path::Path::new(&config_file_path);
                 let prefix = path.parent().unwrap();
                 std::fs::create_dir_all(prefix).unwrap();
 
-                let stringified_config = format!(
-                    "
-## vite config
-{}
-{}
-
-## nextjs config
-{}
-{}
-",
-                    toml::to_string(&default_config.vite_proj_dependancies).unwrap(),
-                    toml::to_string(&default_config.vite_dev_dependancies).unwrap(),
-                    toml::to_string(&default_config.next_proj_dependancies).unwrap(),
-                    toml::to_string(&default_config.next_dev_dependancies).unwrap(),
-                );
+                // stringify default config
+                let stringified_config = toml::to_string(&default_config).unwrap();
                 fs::write(&config_file_path, stringified_config).unwrap();
 
+                // return default config
                 default_config
             }
         };
 
-        // extract arguments
-        let args = Args::parse();
-
         // check if template is valid
-        if !valid_templates.contains(&args.template.as_str()) {
-            println!(
-                "Invalid template {}. Valid templates are: {}",
-                &args.template,
-                valid_templates.join(", ")
-            );
-            std::process::exit(1);
-        }
+        let dependancies = if &args.template == "vite" {
+            Dependancies {
+                dev: config.vite.dev,
+                proj: config.vite.proj,
+            }
+        } else if &args.template == "next" {
+            Dependancies {
+                dev: config.next.dev,
+                proj: config.next.proj,
+            }
+        } else {
+            println!("Invalid template, see --help for more info");
+            panic!("Invalid template");
+        };
 
         // define current working directory
         let cwd = std::env::current_dir().unwrap();
 
         // define final project directory
         let project_dir = cwd.join(&args.name);
-
-        // TODO: panic if template is not valid
-        // ...
 
         // project initialisation
         let init_command = generate_init_command(&args);
@@ -133,24 +140,10 @@ fn main() {
         sp.stop_and_persist("⚡", "Project created".to_string());
 
         // dependancy installation
-        let dependancies = if &args.template == "vite" {
-            Dependancies {
-                dev: config.vite_dev_dependancies,
-                proj: config.vite_proj_dependancies,
-            }
-        } else if &args.template == "next" {
-            Dependancies {
-                dev: config.next_dev_dependancies,
-                proj: config.next_proj_dependancies,
-            }
-        } else {
-            panic!("Invalid template")
-        };
-
         install_dependancies(&dependancies.dev, &project_dir, true);
         install_dependancies(&dependancies.proj, &project_dir, false);
 
-        // tailwindcss config
+        // configure tailwind if it is installed
         if dependancies.dev.contains(&"tailwindcss".to_string()) {
             init_tailwind(&args, &project_dir);
         }
@@ -164,6 +157,7 @@ fn main() {
         std::process::exit(0);
     };
 }
+
 /// execute a terminal command for the current OS
 fn dynamic_exec(command: Vec<&str>, dir: &std::path::PathBuf) -> std::process::Output {
     // define current OS and use appropriate command
