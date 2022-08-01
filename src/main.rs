@@ -12,16 +12,16 @@ use toml;
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Config {
-    vite: Dependancies,
-    next: Dependancies,
+    vite: Dependencies,
+    next: Dependencies,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-struct Dependancies {
+struct Dependencies {
     dev: Vec<String>,
     proj: Vec<String>,
 }
-/// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependancies.
+/// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependencies.
 /// Currently compatible with templates: Vite, Next JS
 #[derive(Parser)]
 #[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.2.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]", )]
@@ -52,7 +52,7 @@ fn main() {
 
     // define default configuration
     let default_config = Config {
-        vite: Dependancies {
+        vite: Dependencies {
             dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
                 .iter()
                 .map(|x| x.to_string())
@@ -62,7 +62,7 @@ fn main() {
                 .map(|x| x.to_string())
                 .collect(),
         },
-        next: Dependancies {
+        next: Dependencies {
             dev: vec!["tailwindcss", "postcss", "autoprefixer", "jest"]
                 .iter()
                 .map(|x| x.to_string())
@@ -109,13 +109,13 @@ fn main() {
         };
 
         // check if template is valid
-        let dependancies = if &args.template == "vite" {
-            Dependancies {
+        let dependencies = if &args.template == "vite" {
+            Dependencies {
                 dev: config.vite.dev,
                 proj: config.vite.proj,
             }
         } else if &args.template == "next" {
-            Dependancies {
+            Dependencies {
                 dev: config.next.dev,
                 proj: config.next.proj,
             }
@@ -139,12 +139,12 @@ fn main() {
         dynamic_exec(init_command, &cwd);
         sp.stop_and_persist("⚡", "Project created".to_string());
 
-        // dependancy installation
-        install_dependancies(&dependancies.dev, &project_dir, true);
-        install_dependancies(&dependancies.proj, &project_dir, false);
+        // dependency installation
+        install_dependencies(&dependencies.dev, &project_dir, true);
+        install_dependencies(&dependencies.proj, &project_dir, false);
 
         // configure tailwind if it is installed
-        if dependancies.dev.contains(&"tailwindcss".to_string()) {
+        if dependencies.dev.contains(&"tailwindcss".to_string()) {
             init_tailwind(&args, &project_dir);
         }
 
@@ -215,20 +215,20 @@ fn generate_init_command(args: &Args) -> Vec<&str> {
     }
 }
 
-/// install dependancies
-fn install_dependancies(dependancies: &Vec<String>, dir: &std::path::PathBuf, is_dev: bool) {
-    // show "dev" keyword if installing dev dependancies
+/// install dependencies
+fn install_dependencies(dependencies: &Vec<String>, dir: &std::path::PathBuf, is_dev: bool) {
+    // show "dev" keyword if installing dev dependencies
     let dev = if is_dev { "dev " } else { "" };
 
-    // iterate through dependancies and install
-    dependancies.iter().for_each(|dependancy| {
+    // iterate through dependencies and install
+    dependencies.iter().for_each(|dependency| {
         let mut sp = Spinner::new(
             Spinners::Dots12,
-            format!("Installing {}dependancy {}", dev, dependancy).into(),
+            format!("Installing {}dependency {}", dev, dependency).into(),
         );
-        let install_command = vec!["npm", "install", dependancy];
+        let install_command = vec!["npm", "install", dependency];
         dynamic_exec(install_command, &dir);
-        sp.stop_and_persist("✅", format!("{} installed", dependancy));
+        sp.stop_and_persist("✅", format!("{} installed", dependency));
     });
 }
 
