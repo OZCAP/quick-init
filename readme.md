@@ -13,6 +13,10 @@ brew tap ozcap/quick-init && brew install quick-init
 ```
 
 ### Documentation
+
+#### Example:
+<img src="https://github.com/OZCAP/quick-init/blob/main/working-sample.png" alt="Quick Init Usage Example">
+
 #### Usage:
     quick-init <PROJECT_NAME> [OPTIONS]
 
