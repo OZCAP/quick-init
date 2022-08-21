@@ -7,7 +7,7 @@ Typescript is selected **as default**. If JS is to be used, it must be specified
 Compatible templates: **Vite, Next JS**
 
 ### Installation
-#### Mac OSX (Brew):
+#### Mac OSX (Homebrew):
 ```bash
 brew tap ozcap/quick-init && brew install quick-init
 ```
