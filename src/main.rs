@@ -24,7 +24,7 @@ struct Dependencies {
 /// Quickly initialise and configure React-Typescript projects with tailwindcss and other dependencies.
 /// Currently compatible with templates: Vite, Next JS
 #[derive(Parser)]
-#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.2.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]", )]
+#[clap(author="Oscar Pickerill <me@oscars.dev>", version="v0.3.0", about, long_about = None, usage = "quick-init <NAME> [OPTIONS]", )]
 
 
 struct Args {
